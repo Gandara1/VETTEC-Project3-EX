@@ -49,6 +49,7 @@ module "eks" {
       min_size     = 1
       max_size     = 3
       desired_size = 2
+    }
 
     two = {
       name = "Airborne-Node-2"
@@ -61,11 +62,11 @@ module "eks" {
       desired_size = 2
     }
   }
-}   
+   
 
 
 data "aws_iam_policy" "ebs_csi_policy" {
-  arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+  policy_name = "AmazonEBSCSIDriverPolicy"
 }
 
 module "irsa-ebs-csi" {
@@ -89,5 +90,9 @@ resource "aws_eks_addon" "ebs-csi" {
     "terraform" = "true"
   }
 }
+
+
+
+
 
 #test
