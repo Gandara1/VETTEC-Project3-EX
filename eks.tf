@@ -1,31 +1,36 @@
-
+#
+# https://github.com/hashicorp/learn-terraform-provision-eks-cluster/blob/main/main.tf
 #testCody
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.0"
+  version = "19.5.1"
 
-  cluster_name    = "my-cluster"
-  cluster_version = "1.27"
+  cluster_name    = "Airborne-Cluster"
+  cluster_version = "1.24"
 
-  cluster_endpoint_public_access  = true
-
-  cluster_addons = {
-    coredns = {
-      most_recent = true
-    }
-    kube-proxy = {
-      most_recent = true
-    }
-    vpc-cni = {
-      most_recent = true
-    }
-  }
+#  cluster_endpoint_public_access  = true
+#
+#  cluster_addons = {
+#    coredns = {
+#      most_recent = true
+#    }
+#    kube-proxy = {
+#      most_recent = true
+#    }
+#    vpc-cni = {
+#      most_recent = true
+#    }
+#  }
 
   vpc_id                   = aws_vpc.main.id
-  subnet_ids               = ["subnet-abcde012", "subnet-bcde012a", "subnet-fghi345a"]
-  control_plane_subnet_ids = ["subnet-xyzde987", "subnet-slkjf456", "subnet-qeiru789"]
+  subnet_ids                     = module.vpc.private_subnets
+  cluster_endpoint_public_access = true
 
+  eks_managed_node_group_defaults = {
+    ami_type = "AL2_x86_64"
+
+  }
   # Self Managed Node Group(s)
   self_managed_node_group_defaults = {
     instance_type                          = "t3.medium"
@@ -37,95 +42,52 @@ module "eks" {
 
   self_managed_node_groups = {
     one = {
-      name         = "mixed-1"
-      max_size     = 5
+      name         = "Airborne-Node-1"
+      instance_types = ["t3.small"]
+      capacity_type  = "SPOT"
+      
+      min_size     = 1
+      max_size     = 3
       desired_size = 2
 
-      use_mixed_instances_policy = true
-      mixed_instances_policy = {
-        instances_distribution = {
-          on_demand_base_capacity                  = 0
-          on_demand_percentage_above_base_capacity = 10
-          spot_allocation_strategy                 = "capacity-optimized"
-        }
+    two = {
+      name = "Airborne-Node-2"
 
-        override = [
-          {
-            instance_type     = "t3.medium"
-            weighted_capacity = "1"
-          },
-          {
-            instance_type     = "t3.medium"
-            weighted_capacity = "2"
-          },
-        ]
-      }
-    }
-  }
-
-  # EKS Managed Node Group(s)
-  eks_managed_node_group_defaults = {
-    instance_types = ["t3.medium", "t3.medium", "t3.medium", "t3.medium"]
-  }
-
-  eks_managed_node_groups = {
-    blue = {}
-    green = {
-      min_size     = 1
-      max_size     = 10
-      desired_size = 1
-
-      instance_types = ["t3.medium"]
+      instance_types = ["t3.small"]
       capacity_type  = "SPOT"
+
+      min_size     = 1
+      max_size     = 3
+      desired_size = 2
     }
   }
+}   
 
-  # Fargate Profile(s)
-  fargate_profiles = {
-    default = {
-      name = "default"
-      selectors = [
-        {
-          namespace = "default"
-        }
-      ]
-    }
-  }
 
-  # aws-auth configmap
-  manage_aws_auth_configmap = true
-
-  aws_auth_roles = [
-    {
-      rolearn  = "arn:aws:iam::66666666666:role/role1"
-      username = "role1"
-      groups   = ["system:masters"]
-    },
-  ]
-
-  aws_auth_users = [
-    {
-      userarn  = "arn:aws:iam::66666666666:user/user1"
-      username = "user1"
-      groups   = ["system:masters"]
-    },
-    {
-      userarn  = "arn:aws:iam::66666666666:user/user2"
-      username = "user2"
-      groups   = ["system:masters"]
-    },
-  ]
-
-  aws_auth_accounts = [
-    "777777777777",
-    "888888888888",
-  ]
-
-  tags = {
-    Environment = "dev"
-    Terraform   = "true"
-  }
+data "aws_iam_policy" "ebs_csi_policy" {
+  arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }
 
+module "irsa-ebs-csi" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
+  version = "4.7.0"
+
+  create_role                   = true
+  role_name                     = "AmazonEKSTFEBSCSIRole-${module.eks.cluster_name}"
+  provider_url                  = module.eks.oidc_provider
+  role_policy_arns              = [data.aws_iam_policy.ebs_csi_policy.arn]
+  oidc_fully_qualified_subjects = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
+}
+
+resource "aws_eks_addon" "ebs-csi" {
+  cluster_name             = module.eks.cluster_name
+  addon_name               = "aws-ebs-csi-driver"
+  addon_version            = "v1.5.2-eksbuild.1"
+  service_account_role_arn = module.irsa-ebs-csi.iam_role_arn
+  tags = {
+    "eks_addon" = "ebs-csi"
+    "terraform" = "true"
+  }
+}
 
 #test
