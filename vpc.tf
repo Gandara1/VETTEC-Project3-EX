@@ -5,7 +5,6 @@ resource "aws_vpc" "main" {
   }
 }
 
-
 # Public East-1a Subnet  #1
 resource "aws_subnet" "pub_sbnet_nat_1a" {
   vpc_id            = aws_vpc.main.id
@@ -84,7 +83,7 @@ resource "aws_route_table" "public_route_table" {
   }
 
   tags = {
-    Name = "coffeePublicRouteTable"
+    Name = "AirbornePublicRouteTable"
   }
 }
 
