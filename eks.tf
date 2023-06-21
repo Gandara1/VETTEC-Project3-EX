@@ -1,3 +1,6 @@
+
+
+
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 19.0"
@@ -19,7 +22,7 @@ module "eks" {
     }
   }
 
-  vpc_id                   = "vpc-1234556abcdef"
+  vpc_id                   = aws_vpc.main.id
   subnet_ids               = ["subnet-abcde012", "subnet-bcde012a", "subnet-fghi345a"]
   control_plane_subnet_ids = ["subnet-xyzde987", "subnet-slkjf456", "subnet-qeiru789"]
 

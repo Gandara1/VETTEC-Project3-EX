@@ -27,8 +27,8 @@ resource "aws_subnet" "pub_sbnet_nat_1b" {
   }
 }
 
-# Private East-1a Subnet for EC2  #3
-resource "aws_subnet" "pvt_sbnet_ec2_1a" {
+# Private East-1a Subnet for EKS  #3
+resource "aws_subnet" "pvt_sbnet_eks_1a" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = "10.0.3.0/24"
   availability_zone = "us-east-1a"
@@ -37,8 +37,8 @@ resource "aws_subnet" "pvt_sbnet_ec2_1a" {
   }
 }
 
-# Private East-1a Subnet for EC2  #4
-resource "aws_subnet" "pvt_sbnet_ec2_1b" {
+# Private East-1a Subnet for EKS  #4
+resource "aws_subnet" "pvt_sbnet_eks_1b" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = "10.0.4.0/24"
   availability_zone = "us-east-1b"
