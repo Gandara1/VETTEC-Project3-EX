@@ -66,6 +66,17 @@ resource "aws_subnet" "pvt_sbnet_rds_1b" {
 }
 
 
+# Public East-1a Subnet  #7
+resource "aws_subnet" "pub_sbnet_nat_1a" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.7.0/24"
+  availability_zone = "us-east-1a"
+  tags = {
+    Name = "Airborne-Public-Jenkins"
+  }
+}
+
+
 # IGW is needed for public access
 # Internet Gateway
 resource "aws_internet_gateway" "igw" {
